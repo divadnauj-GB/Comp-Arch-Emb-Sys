@@ -118,7 +118,7 @@ int main()
   {
     if(timers.sw_tmr1_flag){
       timers.sw_tmr1_flag = 0;
-      toggle_pin_state(GPIOA,LED_PIN);
+      toggle_pin_state(GPIOC,LED_PIN);
       if(direction=='w'){
         if(point.y<7){
           point.y++;
