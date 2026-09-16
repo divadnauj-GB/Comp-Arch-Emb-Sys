@@ -3,7 +3,9 @@
 
 #include "system_config.h"
 
-void UART_Init(USART_TypeDef* USART);
+void UART_GPIO_Config(USART_TypeDef* USART);
+
+void UART_Init(USART_TypeDef* USART, uint32_t baudrate);
 void UART_RX_IRQ_EN(USART_TypeDef* USART,uint8_t enable);
 
 

@@ -88,6 +88,32 @@ void GPIOConfig(void){
 
 }
 
+
+void GPIO_board_config(void){
+  GPIO_InitTypeDef GPIO_Init; 
+  GPIO_Init.Pin = LED_PIN;
+  GPIO_Init.Mode = 2; // Alternate function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Speed = 3; 
+  GPIO_Init.Alternate = 1; // Set alternate function to AF1 (TIM2_CH1)
+  GPIO_Config(GPIOA,GPIO_Init);
+
+  GPIO_Init.Pin = 0;
+  GPIO_Init.Mode = 2; // Alternate function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Alternate = 2; // Set alternate function to AF2 (TIM5_CH1)
+  GPIO_Config(GPIOA,GPIO_Init);
+
+  GPIO_Init.Pin = BUTTON_PIN;
+  GPIO_Init.Mode = 0;
+  GPIO_Init.Pull = 1;
+  GPIO_Config(GPIOC,GPIO_Init);
+
+  UART_GPIO_Config(USART2);
+  SPI_GPIO_Config(SPI2);
+  SPI_GPIO_Config(SPI3);
+}
+
 int main()
 {
 
@@ -99,19 +125,9 @@ int main()
   timers.sw_tmr2_period = 1000;
   /*Enable the CLK to the GPIOA and GPIOC, this needs to be done before the configuration opf the GPIO*/
   
+  GPIO_board_config();
+  UART_Init(USART2,115200);
   
-
-  GPIOConfig();
-
-  WRITE_REG_FIELD(RCC->APB1ENR,RCC_APB1ENR_SPI2EN,1);
-  WRITE_REG_FIELD(RCC->APB1ENR,RCC_APB1ENR_SPI3EN,1);
-  WRITE_REG_FIELD(RCC->APB1ENR,RCC_APB1ENR_USART2EN,1);
-  volatile unsigned int dummy;
-  dummy =  RCC->APB1ENR;
-  dummy =  RCC->APB1ENR;
-
-  UART_Init(USART2);
-
   SPI_Master_Init(SPI2);
   SPI_Slave_Init(SPI3);
   SPI_Enable(SPI2,1);
@@ -120,7 +136,7 @@ int main()
 
   NVIC_EnableIRQ(SPI3_IRQn);
 
-  write_pin_state(GPIOB,GPIO_ODR_OD9,1);
+  write_pin_state(GPIOB,9,1);
   //SPI_Enable(SPI4,0);
   uint8_t spi_master[12]="MasterMSG\r\n\0";
   
@@ -130,10 +146,10 @@ int main()
       timers.sw_tmr1_flag=0;
       i=0;
       sprintf(spi_master,"MasterMSG\r\n\0");
-      write_pin_state(GPIOB,GPIO_ODR_OD9,0);
+      write_pin_state(GPIOB,9,0);
       SPI_Slave_Transmit(SPI3,spi_slave[i]);
       SPI_Master_Tranfer(SPI2,spi_master,12);
-      write_pin_state(GPIOB,GPIO_ODR_OD9,1);
+      write_pin_state(GPIOB,9,1);
 
       uart_puts(USART2,"The SPI Master Sent: ");
       uart_puts(USART2,spi_slave_rcv);

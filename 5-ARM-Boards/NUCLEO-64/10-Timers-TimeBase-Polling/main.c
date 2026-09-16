@@ -15,14 +15,14 @@ void Timers_Init(void){
   dummy =  RCC->APB1ENR;
   dummy =  RCC->APB1ENR;
 
-  WRITE_REG_FIELD(TIM2->PSC, TIM_PSC_PSC, 84-1); // Prescaler value to get 1 MHz timer clock (assuming APB1 clock is 84 MHz)
+  WRITE_REG_FIELD(TIM2->PSC, TIM_PSC_PSC, 42-1); // Prescaler value to get 1 MHz timer clock (assuming APB2 clock is 42 MHz)
   WRITE_REG(TIM2->ARR, 500000-1); // Set the auto-reload value to achieve a 0.5-second period (500,000 counts at 1 MHz)
   WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_DIR, 0); // Set the timer to count up
   WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_ARPE, 1); // Enable auto-reload preload
   WRITE_REG(TIM2->CNT, 0); // Initialize the counter to 0
   WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_CEN, 1); // Enable the timer
 
-  WRITE_REG_FIELD(TIM5->PSC, TIM_PSC_PSC, 84-1); // Prescaler value to get 1 MHz timer clock (assuming APB1 clock is 84 MHz)
+  WRITE_REG_FIELD(TIM5->PSC, TIM_PSC_PSC, 42-1); // Prescaler value to get 1 MHz timer clock (assuming APB2 clock is 42 MHz)
   WRITE_REG(TIM5->ARR, 100000-1); // Set the auto-reload value to achieve a 0.1-second period (100,000 counts at 1 MHz)
   WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_DIR, 0); // Set the timer to count up
   WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_ARPE, 1); // Enable auto-reload preload

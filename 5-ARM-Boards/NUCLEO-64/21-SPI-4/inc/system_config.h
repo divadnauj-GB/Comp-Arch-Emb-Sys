@@ -24,8 +24,19 @@ typedef struct{
 void update_sw_timers(volatile SW_Timers* timer);
 
 //System clock
-#define SYCLK 84000000 
+#define SYSCLK 84000000 
 #define MICROSECONDS_PER_SECOND 1000000
+
+#if SYSCLK == 84000000
+    #define AHB1CLK SYSCLK
+    #define APB1CLK SYSCLK/2
+    #define APB2CLK APB1CLK
+#else
+    #define AHB1CLK SYSCLK
+    #define APB1CLK SYSCLK
+    #define APB2CLK APB1CLK
+#endif
+
 
 void clock_config(void);
 

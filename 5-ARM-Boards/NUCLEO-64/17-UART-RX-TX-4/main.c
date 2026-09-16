@@ -30,7 +30,7 @@ volatile char uart_flag;
 volatile char uart_data;
 void USART2_IRQHandler(void){
   /*The pending IRQ flag for the uart is automatically cleared after reading the recieved data*/
-  uart_data = uart_getc();
+  uart_data = uart_getc(USART2);
   uart_flag = 1;
 }
 
@@ -42,8 +42,8 @@ void TIM5_IRQHandler(void){
     period = TIM5->CCR1;
     if(period!=0) {
       duty = TIM5->CCR2;
-    }
-    TIM5->SR&=~TIM_SR_CC1IF;   
+    } 
+    WRITE_REG_FIELD(TIM5->SR, TIM_SR_CC1IF, 0); // Clear the interrupt flag
   }
 
 }
@@ -51,57 +51,79 @@ void TIM5_IRQHandler(void){
 void TIM2_PWM_10KHz_Init(void){
   /*Enable the clock to the timers 2 and 5*/
   
-  RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+  WRITE_REG_FIELD(RCC->APB1ENR, RCC_APB1ENR_TIM2EN, 1);
   volatile unsigned int dummy;
   dummy =  RCC->APB1ENR;
   dummy =  RCC->APB1ENR;
 
   /* Timer2 config as base timer*/
-  TIM2->PSC = 0;             // Prescale to 1MHz
-  TIM2->ARR = 4200-1;         // Timeout at 500ms
-  TIM2->CCR1 = 2100-1;
-  TIM2->CCMR1 |= (6 << TIM_CCMR1_OC1M_Pos) | TIM_CCMR1_OC1PE; 
-  TIM2->CCER |= TIM_CCER_CC1E;
-  TIM2->CR1 &= ~TIM_CR1_DIR;     // Counter Up
-  TIM2->CR1 |= TIM_CR1_ARPE;    // Autoreload
-  TIM2->CNT = 0;                // restart the counter
-  TIM2->CR1 = TIM_CR1_CEN;      // Enable the timer
+  WRITE_REG(TIM2->PSC, 0);             // Prescale to 1MHz
+  WRITE_REG(TIM2->ARR, 4200-1);         // Timeout at 500ms
+  WRITE_REG(TIM2->CCR1, 2100-1); //4200-1;
+  WRITE_REG_FIELD(TIM2->CCMR1, TIM_CCMR1_OC1M, 6); // Set output compare mode to PWM mode 1
+  WRITE_REG_FIELD(TIM2->CCMR1, TIM_CCMR1_OC1PE, 1); // Enable output compare preload for channel 1
+  WRITE_REG_FIELD(TIM2->CCER, TIM_CCER_CC1E, 1); // Disable fast mode for channel 1
+  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_DIR, 0); // Counter Up
+  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_ARPE, 1); // Autoreload
+  WRITE_REG(TIM2->CNT, 0);                // restart the counter
+  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_CEN, 1); // Enable the timer
 
 }
 
 void TIM5_IC_Init(void){
   
-  RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
+  WRITE_REG_FIELD(RCC->APB1ENR, RCC_APB1ENR_TIM5EN, 1);
   volatile unsigned int dummy;
   dummy =  RCC->APB1ENR;
   dummy =  RCC->APB1ENR;
 
   /* Timer2 config as base timer*/
-  TIM5->PSC = 0;             // Prescale to 42MHz
-  TIM5->ARR = 0xffffffff;         // maximum reload value
+  WRITE_REG(TIM5->PSC, 0);             // Prescale to 42MHz
+  WRITE_REG(TIM5->ARR, 0xffffffff);         // maximum reload value
  
-  TIM5->CCMR1 |= (1 << TIM_CCMR1_CC1S_Pos);  // enable Input capture CH1 on TI1
-  TIM5->CCER  &= ~((1<<TIM_CCER_CC1P_Pos) | (1<<TIM_CCER_CC1NP_Pos)); // Capture configured on rising edge
+  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_CC1S, 1);  // enable Input capture CH1 on TI1
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC1P, 0); // Capture configured on rising edge
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC1NP, 0); // Capture configured on rising edge
 
-  TIM5->CCMR1 |= (2 << TIM_CCMR1_CC2S_Pos); // Enable Input capture CH2 on same TI1
-  TIM5->CCER  |= ((1<<TIM_CCER_CC2P_Pos) | ((0<<TIM_CCER_CC2NP_Pos))); // Enable capture on falling edge 
+  WRITE_REG_FIELD(TIM5->CCMR1, TIM_CCMR1_CC2S, 2); // Enable Input capture CH2 on same TI1
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC2P, 1); // Enable capture on falling edge
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC2NP, 0); // Enable capture on falling edge
   
-  TIM5->SMCR |= (5<<TIM_SMCR_TS_Pos); // TI1FP1 selected
-  TIM5->SMCR |= (4<<TIM_SMCR_SMS_Pos); //Reset the Timer on every rising capture event
+  WRITE_REG_FIELD(TIM5->SMCR, TIM_SMCR_TS, 5); // TI1FP1 selected
+  WRITE_REG_FIELD(TIM5->SMCR, TIM_SMCR_SMS, 4); //Reset the Timer on every rising capture event
 
-  TIM5->CR1 &= ~TIM_CR1_DIR;     // Counter Up
-  TIM5->CR1 |= TIM_CR1_ARPE;    // Autoreload, this does not 
-  //TIM5->CNT = 0;                // restart the counter
-  TIM5->CCER |= (1<<TIM_CCER_CC1E_Pos) | (1<<TIM_CCER_CC2E_Pos); // Enable cpature CC1 and CC2
-  TIM5->DIER |= (1<<TIM_DIER_CC1IE_Pos); // Enable CC1 interrupt (only on rising edge)
-  TIM5->CR1 |= TIM_CR1_CEN;      // Enable the timer
+  WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_DIR, 0); // Counter Up
+  WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_ARPE, 1);    // Autoreload, this does not 
+
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC1E, 1); // Enable capture CC1
+  WRITE_REG_FIELD(TIM5->CCER, TIM_CCER_CC2E, 1); // Enable capture CC2
+  WRITE_REG_FIELD(TIM5->DIER, TIM_DIER_CC1IE, 1); // Enable CC1 interrupt (only on rising edge)
+  WRITE_REG_FIELD(TIM5->CR1, TIM_CR1_CEN, 1);      // Enable the timer
 
   NVIC_EnableIRQ(TIM5_IRQn); // Enable the TIM5 IRQ
 
 }
 
+void GPIO_board_config(void){
+  GPIO_InitTypeDef GPIO_Init; 
+  GPIO_Init.Pin = LED_PIN;
+  GPIO_Init.Mode = 2; // Alternate function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Speed = 3; 
+  GPIO_Init.Alternate = 1; // Set alternate function to AF1 (TIM2_CH1)
+  GPIO_Config(GPIOA,GPIO_Init);
 
+  GPIO_Init.Pin = 0;
+  GPIO_Init.Mode = 2; // Alternate function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Alternate = 2; // Set alternate function to AF2 (TIM5_CH1)
+  GPIO_Config(GPIOA,GPIO_Init);
 
+  GPIO_Init.Pin = BUTTON_PIN;
+  GPIO_Init.Mode = 0;
+  GPIO_Init.Pull = 1;
+  GPIO_Config(GPIOC,GPIO_Init);
+}
 
 
 int main()
@@ -113,44 +135,17 @@ int main()
    
   timers.sw_tmr1_period = 1000;
   timers.sw_tmr2_period = 1000;
-  /*Enable the CLK to the GPIOA and GPIOC, this needs to be done before the configuration opf the GPIO*/
   
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN; // Enable GPIOA clock in RCC_AHB1ENR register (bit 0)
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN; // Enable GPIOC clock in RCC_AHB1ENR register (bit 2)
-  // do two dummy reads after enabling the peripheral clock, as per the errata
-  volatile unsigned int dummy;
-  dummy = (RCC->AHB1ENR);
-  dummy = (RCC->AHB1ENR);
+  GPIO_board_config();
   
-  GPIO_InitTypeDef GPIO_Init; 
-  GPIO_Init.Pin = (1<<LED_PIN);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER5_Pos);
-  GPIO_Init.Speed = (3 << GPIO_OSPEEDR_OSPEED5_Pos);
-  GPIO_Init.Alternate = (1<<GPIO_AFRL_AFSEL5_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-  GPIO_Init.Pin = (1<<0);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER0_Pos);
-  GPIO_Init.Alternate = (2<<GPIO_AFRL_AFSEL0_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-  GPIO_Init.Pin = (1<<2);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER2_Pos);
-  GPIO_Init.Alternate = (7<<GPIO_AFRL_AFSEL2_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-   GPIO_Init.Pin = (1<<3);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER3_Pos);
-  GPIO_Init.Alternate = (7<<GPIO_AFRL_AFSEL3_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-  GPIO_Init.Pin = (1<<BUTTON_PIN);
-  GPIO_Init.Mode = (0 << GPIO_MODER_MODER13_Pos);
-  GPIO_Config(GPIOC,GPIO_Init);
   TIM2_PWM_10KHz_Init();
   TIM5_IC_Init();
-  UART2_Init();
+
+  UART_GPIO_Config(USART2);
+  UART_Init(USART2,115200);
+  UART_RX_IRQ_EN(USART2,1); 
   NVIC_EnableIRQ(USART2_IRQn);
+
   char text_data[64];
   uint32_t new_duty=2100;
   while(1)
@@ -160,7 +155,7 @@ int main()
         freq = 42000000.0 / (float)period; 
         dutyper = ((float) duty / (float) period)*100;
         sprintf(text_data, "PWM Input: Freq=%.2f, Duty_Cycle=%.2f\r\n\0",freq,dutyper);
-        uart_puts(text_data);
+        uart_puts(USART2, text_data);
       }
       if(uart_flag){
         uart_flag = 0;
@@ -174,7 +169,7 @@ int main()
             new_duty-=500;
           } 
         }
-        TIM2->CCR1 = new_duty;
+        WRITE_REG(TIM2->CCR1, new_duty);
       }
   }
 

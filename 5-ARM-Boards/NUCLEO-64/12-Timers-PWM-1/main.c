@@ -9,34 +9,9 @@
 #define LED_PIN 5 // Pin 5 corresponds to the on-board LED on the NUCLEO-64 board
 #define BUTTON_PIN 13 // Pin 13 corresponds to the on-board button on the NUCLEO-64 board
 
-/*Declaration of two timers made by software updated every 1ms*/
-/*Declaration of two timers made by software updated every 1ms*/
-typedef struct{
-  unsigned int sw_tmr1_count;
-  unsigned int sw_tmr2_count;
-  unsigned int sw_tmr1_period;
-  unsigned int sw_tmr2_period;
-  unsigned int sw_tmr1_flag;
-  unsigned int sw_tmr2_flag;
-} SW_Timers;
 
 /* Must be delcared volatile as the timer can update asynchounosly*/
 volatile SW_Timers timers;
-
-
-
-void update_sw_timers(SW_Timers* timer){
-  timer->sw_tmr1_count++;
-  timer->sw_tmr2_count++;
-  if(timer->sw_tmr1_count==timer->sw_tmr1_period){
-    timer->sw_tmr1_count=0;
-    timer->sw_tmr1_flag=1;
-  }
-  if(timer->sw_tmr2_count==timer->sw_tmr2_period){
-    timer->sw_tmr2_count=0;
-    timer->sw_tmr2_flag=1;
-  }
-}
 
 /*The SysTick_Handler, was already defined as weak during the crt0.s init file, so when we define it here, 
 the Vector table is updated whit the new address where the function is allocated, so that when and interrupt happen
@@ -48,22 +23,38 @@ void SysTick_Handler(void){
 void TIM2_PWM_10KHz_Init(void){
   /*Enable the clock to the timers 2 and 5*/
   
-  RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
+  WRITE_REG_FIELD(RCC->APB1ENR, RCC_APB1ENR_TIM2EN, 1);
   volatile unsigned int dummy;
   dummy =  RCC->APB1ENR;
   dummy =  RCC->APB1ENR;
 
   /* Timer2 config as base timer*/
-  TIM2->PSC = 0;             // Prescale to 1MHz
-  TIM2->ARR = 8400-1;         // Timeout at 500ms
-  TIM2->CCR1 = 10;//4200-1;
-  TIM2->CCMR1 |= (6 << TIM_CCMR1_OC1M_Pos) | TIM_CCMR1_OC1PE; 
-  TIM2->CCER |= TIM_CCER_CC1E;
-  TIM2->CR1 |= TIM_CR1_DIR;     // Counter Up
-  TIM2->CR1 |= TIM_CR1_ARPE;    // Autoreload
-  TIM2->CNT = 0;                // restart the counter
-  TIM2->CR1 = TIM_CR1_CEN;      // Enable the timer
+  WRITE_REG(TIM2->PSC, 0);             // Prescale to 1MHz
+  WRITE_REG(TIM2->ARR, 4200-1);         // Timeout at 500ms
+  WRITE_REG(TIM2->CCR1, 10); //4200-1;
+  WRITE_REG_FIELD(TIM2->CCMR1, TIM_CCMR1_OC1M, 6); // Set output compare mode to PWM mode 1
+  WRITE_REG_FIELD(TIM2->CCMR1, TIM_CCMR1_OC1PE, 1); // Enable output compare preload for channel 1
+  WRITE_REG_FIELD(TIM2->CCER, TIM_CCER_CC1E, 1); // Disable fast mode for channel 1
+  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_DIR, 0); // Counter Up
+  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_ARPE, 1); // Autoreload
+  WRITE_REG(TIM2->CNT, 0);                // restart the counter
+  WRITE_REG_FIELD(TIM2->CR1, TIM_CR1_CEN, 1); // Enable the timer
 
+}
+
+void GPIO_board_config(void){
+  GPIO_InitTypeDef GPIO_Init; 
+  GPIO_Init.Pin = LED_PIN;
+  GPIO_Init.Mode = 2; // Alternate function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Speed = 3; 
+  GPIO_Init.Alternate = 1; // Set alternate function to AF1 (TIM2_CH1)
+  GPIO_Config(GPIOA,GPIO_Init);
+
+  GPIO_Init.Pin = BUTTON_PIN;
+  GPIO_Init.Mode = 0;
+  GPIO_Init.Pull = 1;
+  GPIO_Config(GPIOC,GPIO_Init);
 }
 
 int main()
@@ -76,23 +67,7 @@ int main()
   timers.sw_tmr1_period = 10;
   /*Enable the CLK to the GPIOA and GPIOC, this needs to be done before the configuration opf the GPIO*/
   
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN; // Enable GPIOA clock in RCC_AHB1ENR register (bit 0)
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN; // Enable GPIOC clock in RCC_AHB1ENR register (bit 2)
-  // do two dummy reads after enabling the peripheral clock, as per the errata
-  volatile unsigned int dummy;
-  dummy = (RCC->AHB1ENR);
-  dummy = (RCC->AHB1ENR);
-  
-  GPIO_InitTypeDef GPIO_Init; 
-  GPIO_Init.Pin = (1<<LED_PIN);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER5_Pos);
-  GPIO_Init.Speed = (3 << GPIO_OSPEEDR_OSPEED5_Pos);
-  GPIO_Init.Alternate = (1<<GPIO_AFRL_AFSEL5_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-  GPIO_Init.Pin = (1<<BUTTON_PIN);
-  GPIO_Init.Mode = (0 << GPIO_MODER_MODER13_Pos);
-  GPIO_Config(GPIOC,GPIO_Init);
+  GPIO_board_config();
 
   TIM2_PWM_10KHz_Init();
   uint32_t duty_cycle=50;
@@ -102,10 +77,10 @@ int main()
     if(timers.sw_tmr1_flag){
       timers.sw_tmr1_flag = 0;
       duty_cycle+=50;
-      if(duty_cycle>=8400){
+      if(duty_cycle>=4200){
         duty_cycle=50;
       }
-      TIM2->CCR1 = duty_cycle;
+      WRITE_REG(TIM2->CCR1, duty_cycle);
     }  
 
   }

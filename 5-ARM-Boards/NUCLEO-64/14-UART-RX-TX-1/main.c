@@ -22,17 +22,18 @@ void SysTick_Handler(void){
   update_sw_timers(&timers);
 }
 
-volatile uint32_t period=0, duty=0;
-float freq=0.0, dutyper=0.0;
+void GPIO_board_config(void){
+  GPIO_InitTypeDef GPIO_Init; 
+  GPIO_Init.Pin = LED_PIN;
+  GPIO_Init.Mode = 1; // Alternate function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Speed = 3; 
+  GPIO_Config(GPIOA,GPIO_Init);
 
-void TIM5_IRQHandler(void){
-  if(TIM5->SR&TIM_SR_CC1IF){
-    period = TIM5->CCR1;
-    if(period!=0) {
-      duty = TIM5->CCR2;
-    }
-    TIM5->SR&=~TIM_SR_CC1IF;   
-  }
+  GPIO_Init.Pin = BUTTON_PIN;
+  GPIO_Init.Mode = 0;
+  GPIO_Init.Pull = 1;
+  GPIO_Config(GPIOC,GPIO_Init);
 
 }
 
@@ -46,34 +47,16 @@ int main()
    
   timers.sw_tmr1_period = 1000;
   timers.sw_tmr2_period = 1000;
-  /*Enable the CLK to the GPIOA and GPIOC, this needs to be done before the configuration opf the GPIO*/
-  
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN; // Enable GPIOA clock in RCC_AHB1ENR register (bit 0)
+  GPIO_board_config();
+  UART_GPIO_Config(USART2); // Configure GPIO pins for USART2 (PA2 for TX, PA3 for RX)
+  UART_Init(USART2, 115200); // Initialize USART2 with a baud rate of 115200
 
-  // do two dummy reads after enabling the peripheral clock, as per the errata
-  volatile unsigned int dummy;
-  dummy = (RCC->AHB1ENR);
-  dummy = (RCC->AHB1ENR);
-  
-  /*Uart Pins Configurations to use the ST-LINK Vitual Serial Port*/
-  GPIO_InitTypeDef GPIO_Init; 
-  GPIO_Init.Pin = (1<<2);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER2_Pos);
-  GPIO_Init.Alternate = (7<<GPIO_AFRL_AFSEL2_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-  GPIO_Init.Pin = (1<<3);
-  GPIO_Init.Mode = (2 << GPIO_MODER_MODER3_Pos);
-  GPIO_Init.Alternate = (7<<GPIO_AFRL_AFSEL3_Pos);
-  GPIO_Config(GPIOA,GPIO_Init);
-
-  UART2_Init();
   char text_data[64];
   while(1)
   {
       if(timers.sw_tmr1_flag){
         timers.sw_tmr1_flag=0;
-        uart_puts("Hello World!\r\n\0");
+        uart_puts(USART2, "Hello World!\r\n\0");
       }
   }
 

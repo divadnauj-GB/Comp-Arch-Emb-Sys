@@ -10,7 +10,7 @@
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceRoot}",
-            "executable": "./stand00.elf",
+            "executable": "./main.elf",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32f4x.cfg"
