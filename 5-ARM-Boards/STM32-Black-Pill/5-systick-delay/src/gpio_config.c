@@ -16,8 +16,9 @@ void GPIO_Config(void)
     
   //GPIOA->MODER |= (1 << LED_PIN*2); // Set GPIOA pin 5 as output (bits 10-11 = 01)
   //GPIOC->MODER &= ~(3 << 13*2); // Set GPIOC pin 13 as input (bits 26-27 = 00)
-  GPIOA->MODER_Bits.MODER5 = 1; // Set GPIOA pin 5 as output (bits 10-11 = 01)
-  GPIOC->MODER_Bits.MODER13 = 0; // Set GPIOC pin 13 as input (bits 26-27 = 00)
+  GPIOA->MODER_Bits.MODER0 = 0; // Set GPIOA pin 0 as input (bits 0-1 = 00)
+  GPIOA->PUPDR |= (1 << 0*2); 
+  GPIOC->MODER_Bits.MODER13 = 1; // Set GPIOC pin 13 as Output (bits 26-27 = 01)
 
 }
 

@@ -13,13 +13,10 @@ void GPIO_Config(void)
   dummy = (RCC->AHB1ENR);
   dummy = (RCC->AHB1ENR);
 
-    
-  //GPIOA->MODER |= (1 << LED_PIN*2); // Set GPIOA pin 5 as output (bits 10-11 = 01)
-  //GPIOC->MODER &= ~(3 << 13*2); // Set GPIOC pin 13 as input (bits 26-27 = 00)
-  //GPIOA->MODER_Bits.MODER5 = 1; // Set GPIOA pin 5 as output (bits 10-11 = 01)
-  //GPIOC->MODER_Bits.MODER13 = 0; // Set GPIOC pin 13 as input (bits 26-27 = 00)
-  GPIOA->MODER |= (1 << GPIO_MODER_MODER5_Pos);
-  GPIOC->MODER &= ~(3 << GPIO_MODER_MODER13_Pos);
+  
+  GPIOA->MODER &= ~(3 << GPIO_MODER_MODER0_Pos);
+  GPIOA->PUPDR |= (1 << GPIO_PUPDR_PUPD0_Pos); // Set GPIOA pin 0 as pull-up (bits 0-1 = 01)
+  GPIOC->MODER |= (1 << GPIO_MODER_MODER13_Pos);
 
 }
 
