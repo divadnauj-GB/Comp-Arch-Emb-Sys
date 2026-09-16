@@ -5,6 +5,8 @@
 
 #include "system_config.h"
 
+void I2C_clock_enable(I2C_TypeDef* I2C);
+void I2C_GPIO_Config(I2C_TypeDef *I2C);
 
 void I2C_Master_Init(I2C_TypeDef* I2C);
 void I2C_Master_enable(I2C_TypeDef* I2C, uint8_t val);

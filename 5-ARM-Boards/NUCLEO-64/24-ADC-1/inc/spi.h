@@ -20,9 +20,4 @@ void SPI_Slave_Transmit(SPI_TypeDef* SPI,uint8_t txdata);
 uint8_t SPI_Slave_Receive(SPI_TypeDef* SPI);
 
 
-
-
-
-
-
 #endif

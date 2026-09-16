@@ -41,32 +41,19 @@ void USART2_IRQHandler(void){
 }
 
 
-void GPIOConfig(void){
+void GPIO_board_config(void){
+  GPIO_InitTypeDef GPIO_Init; 
+  GPIO_Init.Pin = LED_PIN;
+  GPIO_Init.Mode = 1; // Output function mode
+  GPIO_Init.Pull = 0; // No pull-up or pull-down
+  GPIO_Init.Speed = 3; 
+  GPIO_Config(GPIOA,GPIO_Init);
 
-  WRITE_REG_FIELD(RCC->AHB1ENR, RCC_AHB1ENR_GPIOAEN, 1);
-  WRITE_REG_FIELD(RCC->AHB1ENR, RCC_AHB1ENR_GPIOBEN, 1);
-  // do two dummy reads after enabling the peripheral clock, as per the errata
-  volatile unsigned int dummy;
-  dummy = (RCC->AHB1ENR);
-  dummy = (RCC->AHB1ENR);
-  
-  /*UART2 TX/RX Pins*/
-  WRITE_REG_FIELD(GPIOA->MODER,GPIO_MODER_MODER2,2);
-  WRITE_REG_FIELD(GPIOA->AFR[0],GPIO_AFRL_AFRL2,7);
-  WRITE_REG_FIELD(GPIOA->MODER,GPIO_MODER_MODER3,2);
-  WRITE_REG_FIELD(GPIOA->AFR[0],GPIO_AFRL_AFRL3,7);
+  GPIO_Init.Pin = BUTTON_PIN;
+  GPIO_Init.Mode = 0;
+  GPIO_Init.Pull = 1;
+  GPIO_Config(GPIOC,GPIO_Init);
 
-  /*I2C1 Config Pins PB6->SCL, PB7->SDA*/
-  WRITE_REG_FIELD(GPIOB->MODER,GPIO_MODER_MODER6,2);
-  WRITE_REG_FIELD(GPIOB->AFR[0],GPIO_AFRL_AFRL6,4);
-  WRITE_REG_FIELD(GPIOB->OTYPER,GPIO_OTYPER_OT6,1); // Open Drain 
-
-  WRITE_REG_FIELD(GPIOB->MODER,GPIO_MODER_MODER7,2);
-  WRITE_REG_FIELD(GPIOB->AFR[0],GPIO_AFRL_AFRL7,4);
-  WRITE_REG_FIELD(GPIOB->OTYPER,GPIO_OTYPER_OT7,1); // Open Drain
-
-  /*SPI1 Config pins*/
-  
 }
 
 int16_t Accel_X_RAW = 0;
@@ -166,22 +153,18 @@ int main()
   SysTick_Init(1000);
   SysTick_enable_IrQ(1);
    
-  timers.sw_tmr1_period = 10;
+  timers.sw_tmr1_period = 100;
   timers.sw_tmr2_period = 1000;
   /*Enable the CLK to the GPIOA and GPIOC, this needs to be done before the configuration opf the GPIO*/
 
-  GPIOConfig();
+  GPIO_board_config();
 
-  WRITE_REG_FIELD(RCC->APB1ENR,RCC_APB1ENR_USART2EN,1);
-  WRITE_REG_FIELD(RCC->APB1ENR,RCC_APB1ENR_I2C1EN,1);
-  volatile unsigned int dummy;
-  dummy =  RCC->APB1ENR;
-  dummy =  RCC->APB1ENR;
-
-  UART_Init(USART2);
+  UART_GPIO_Config(USART2);
+  UART_Init(USART2,115200);
   UART_RX_IRQ_EN(USART2,1);
   NVIC_EnableIRQ(USART2_IRQn);
 
+  I2C_GPIO_Config(I2C1);
   I2C_Master_Init(I2C1);
   I2C_Master_enable(I2C1,1);
   uart_puts(USART2,"I2C-MPU\r\n");

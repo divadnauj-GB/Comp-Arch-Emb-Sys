@@ -3,7 +3,8 @@
 
 #include "system_config.h"
 
-#define SPI_TRANSFER_REG
+
+void SPI_GPIO_Config(SPI_TypeDef *SPI);
 
 void SPI_Slave_IRQ(SPI_TypeDef *SPI,uint8_t val);
 
@@ -17,11 +18,6 @@ char SPI_Master_Tranfer(SPI_TypeDef *SPI, uint8_t  *data, uint32_t size);
 void SPI_Slave_Transmit(SPI_TypeDef* SPI,uint8_t txdata);
 
 uint8_t SPI_Slave_Receive(SPI_TypeDef* SPI);
-
-
-
-
-
 
 
 #endif
