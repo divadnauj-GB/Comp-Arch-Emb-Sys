@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#define STM32F411xE
+
 #include "stm32f4xx.h"
 #include "inc/gpio_config.h"
 #include "inc/SysTick.h"

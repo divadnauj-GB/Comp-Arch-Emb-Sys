@@ -45,10 +45,10 @@ vpath %.S $(sort $(dir $(ASM_SRC)))
 
 CFLAGS+=-Og -g 
 CFLAGS+=-fno-pic
-CFLAGS+=$(ARCH) --specs=nosys.specs --specs=nano.specs $(INCLUDE) -DSTM32F401xE
+CFLAGS+=$(ARCH) --specs=nosys.specs --specs=nano.specs $(INCLUDE) -DSTM32F411xE
 
 LDFLAGS +=-T$(LINKERSCRIPT) 
-LDFLAGS +=-nostdlib -DSTM32F410Rx
+LDFLAGS +=-nostdlib -DSTM32F411xE
 LDFLAGS +=-Wl,--no-relax 
 
 LDLIBS = -lc -lgcc 
